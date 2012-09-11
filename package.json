@@ -1,0 +1,17 @@
+{
+  "name": "cloud-uploader"
+  ,"description": "An upload server written in Node.js that uploads files to S3"
+  ,"author": "Vicente Mundim"
+  ,"version": "0.1.0"
+  ,"dependencies": {
+    "express": "3.x"
+    , "awssum": "0.10.x"
+    , "formidable": "1.0.x"
+    , "underscore": "1.3.x"
+  }
+  ,"engines": {
+    "node": "0.8.x"
+    ,"npm": "1.1.x"
+  }
+  ,"main": "app"
+}
