@@ -4,7 +4,7 @@ An upload server that enables you to upload large files to Amazon S3. It should 
 
 == Installing and Running
 
-After cloning the repository, you will need both [Node.js](http://nodejs.org/) and (NPM)[https://npmjs.org/]. Then just run:
+After cloning the repository, you will need to install [Node.js](http://nodejs.org/), [NPM](https://npmjs.org/) and [Redis](http://redis.io). Then just run:
 
     npm install
 

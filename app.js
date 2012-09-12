@@ -2,25 +2,29 @@
 * Module dependencies.
 */
 
-var express = require('express'),
+var express    = require('express'),
+    redis      = require('redis'),
     formidable = require('formidable'),
-    awssum = require('awssum'),
-    amazon = awssum.load('amazon/amazon'),
-    S3 = awssum.load('amazon/s3').S3,
-    fs = require('fs'),
-    _ = require("underscore")._;
+    awssum     = require('awssum'),
+    amazon     = awssum.load('amazon/amazon'),
+    S3         = awssum.load('amazon/s3').S3,
+    fs         = require('fs'),
+    redisUrl   = require('redis-url').connect(process.env.REDISTOGO_URL)
+    _          = require("underscore")._;
 
 var s3 = new S3({
-  'accessKeyId' : process.env.AWS_KEY,
+  'accessKeyId'     : process.env.AWS_KEY,
   'secretAccessKey' : process.env.AWS_SECRET,
-  'region' : process.env.AWS_REGION || amazon.US_EAST_1
+  'region'          : process.env.AWS_REGION || amazon.US_EAST_1
 });
 
 var app = module.exports = express();
 
+var db = redis.createClient(redisUrl);
+
 app.set('access-control', {
   allowOrigin: process.env.ALLOW_ORIGIN || '*',
-  allowMethods: 'OPTIONS, POST'
+  allowMethods: 'OPTIONS, GET, POST'
 });
 
 app.set('bucket', process.env.AWS_BUCKET);
@@ -94,8 +98,20 @@ app.configure('production', function(){
 
 // Routes
 
-app.get('/', function(request, response) {
-  response.send('Hello!')
+app.get('/status', function(request, response) {
+  setDefaultHeaders(response);
+
+  if (request.query.file) {
+    db.exists(request.query.file, function (error, redis_response) {
+      if (!error) {
+        response.send({finished_uploading: redis_response == 0})
+      } else {
+        response.send(500, error)
+      }
+    })
+  } else {
+    response.send(400, [{error: 'You must pass a file parameter.'}])
+  }
 });
 
 app.options('/upload', function (request, response) {
@@ -112,7 +128,8 @@ app.post('/upload', function(request, response) {
   form.maxFieldsSize = 20 * 1024 * 1024; // 20mb
   form.keepExtensions = true;
 
-  var errors = [];
+  var errors = [],
+      expireUpload = 10 * 24 * 60 * 60; // 10 days
 
   form.on('file', function(name, file) {
     log("%s uploaded successfully, sending it to to the %s bucket in s3", file.name, app.get('bucket'));
@@ -125,9 +142,12 @@ app.post('/upload', function(request, response) {
           ContentType: file.type,
           Body : fs.createReadStream(file.path),
           Acl: app.get('policy')
-        }
+        },
+        fileInfo = new FileInfo(file)
 
-    log('Public file URL: %s', new FileInfo(file).url);
+    log('Public file URL: %s', fileInfo.url);
+
+    db.setex(file.name, expireUpload, JSON.stringify(fileInfo));
 
     s3.PutObject(options, function(errors, data) {
       var elapsed = (new Date() - startTime) / 1000;
@@ -135,6 +155,8 @@ app.post('/upload', function(request, response) {
       log('S3 upload complete in %s seconds.', elapsed);
       log('Errors: ', errors);
       log('Data: ', data);
+
+      db.del(file.name);
 
       fs.unlink(file.path);
     });
