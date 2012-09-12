@@ -64,6 +64,11 @@ function setDefaultHeaders(response) {
   );
 }
 
+function contentTypeFor(request) {
+  console.log(request.headers.accept)
+  return request.headers.accept.indexOf('application/json') !== -1 ? 'application/json' : 'text/plain';
+}
+
 function handleResult(request, response, result, redirect) {
   var jsonResult = JSON.stringify(result)
 
@@ -72,12 +77,10 @@ function handleResult(request, response, result, redirect) {
     log('Redirecting to ' + redirectURL)
     response.redirect(redirectURL)
   } else {
-    var contentType = request.headers.accept.indexOf('application/json') !== -1 ? 'application/json' : 'text/plain';
-
     log('Returning content ' + jsonResult)
     setDefaultHeaders(response);
 
-    response.set('Content-Type', contentType);
+    response.set('Content-Type', contentTypeFor(request));
     response.send(jsonResult);
   }
 }
@@ -104,13 +107,13 @@ app.get('/status', function(request, response) {
   if (request.query.file) {
     db.exists(request.query.file, function (error, redis_response) {
       if (!error) {
-        response.send({finished_uploading: redis_response == 0})
+        response.jsonp({finished_uploading: redis_response == 0})
       } else {
-        response.send(500, error)
+        response.jsonp(500, error)
       }
     })
   } else {
-    response.send(400, [{error: 'You must pass a file parameter.'}])
+    response.jsonp(400, [{error: 'You must pass a file parameter.'}])
   }
 });
 
