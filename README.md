@@ -25,5 +25,6 @@ Besides the AWS key and secret you may also configure other aspects of the serve
 * AWS_REGION: The AWS region to be used (defaults to US_EAST_1)
 * AWS_POLICY: The policy to be used for uploaded files (defaults to public-read)
 * ALLOW_ORIGIN: A comman separated list of hosts that are allowed to upload files (Controls the Access-Control-Allow-Origin header. Defaults to '*')
+* REDISTOGO_URL: The URL of the redis server (Defaults to localhost:6379)
 * USE_SSL: Whether returned URLs should use HTTPS or HTTP
 * PORT: The server port

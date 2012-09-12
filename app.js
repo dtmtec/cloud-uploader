@@ -3,13 +3,12 @@
 */
 
 var express    = require('express'),
-    redis      = require('redis'),
     formidable = require('formidable'),
     awssum     = require('awssum'),
     amazon     = awssum.load('amazon/amazon'),
     S3         = awssum.load('amazon/s3').S3,
     fs         = require('fs'),
-    redisUrl   = require('redis-url').connect(process.env.REDISTOGO_URL)
+    redis      = require('redis-url')
     _          = require("underscore")._;
 
 var s3 = new S3({
@@ -20,7 +19,7 @@ var s3 = new S3({
 
 var app = module.exports = express();
 
-var db = redis.createClient(redisUrl);
+var db = redis.createClient(process.env.REDISTOGO_URL);
 
 app.set('access-control', {
   allowOrigin: process.env.ALLOW_ORIGIN || '*',
