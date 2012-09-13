@@ -10,9 +10,9 @@ After cloning the repository, you will need to install [Node.js](http://nodejs.o
 
 You need to set your AWS key, bucket and secret using environment variables:
 
-   export AWS_KEY=<YOUR_KEY_HERE>
-   export AWS_SECRET=<YOUR_SECRET_HERE>
-   export AWS_BUCKET=<YOUR_BUCKET_HERE>
+    export AWS_KEY=<YOUR_KEY_HERE>
+    export AWS_SECRET=<YOUR_SECRET_HERE>
+    export AWS_BUCKET=<YOUR_BUCKET_HERE>
 
 Finally start the server by:
 
