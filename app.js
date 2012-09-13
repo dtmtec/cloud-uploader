@@ -8,7 +8,8 @@ var express    = require('express'),
     amazon     = awssum.load('amazon/amazon'),
     S3         = awssum.load('amazon/s3').S3,
     fs         = require('fs'),
-    redis      = require('redis-url')
+    redis      = require('redis-url'),
+    crypto     = require('crypto'),
     _          = require("underscore")._;
 
 var s3 = new S3({
@@ -30,6 +31,9 @@ app.set('bucket', process.env.AWS_BUCKET);
 app.set('policy', process.env.AWS_POLICY);
 app.set('use-ssl', process.env.USE_SSL);
 app.set('upload-path', '/uploads/');
+
+app.set('secret', process.env.SECURITY_SECRET);
+app.set('secret_expiration', process.env.SECURITY_SECRET_EXPIRATION || 600); // 5 minutes of expiration
 
 app.set('port', process.env.PORT || 5000)
 
@@ -84,6 +88,21 @@ function handleResult(request, response, result, redirect) {
   }
 }
 
+function validToken(value) {
+  var secret           = app.get('secret'),
+      expiration       = app.get('secret_expiration')
+      currentTimestamp = Math.round(new Date().getTime()/1000)
+      timestamp        = parseInt(value.substr(0,  10), 10),
+      random           = value.substr(10, 10),
+      hash             = value.substr(20),
+      shasum           = crypto.createHash('sha1')
+
+  shasum.update('' + timestamp + random + secret)
+  digest = shasum.digest('hex')
+
+  return timestamp + expiration > currentTimestamp && hash == digest
+}
+
 // Configuration
 
 app.configure('development', function(){
@@ -108,7 +127,7 @@ app.get('/status', function(request, response) {
       if (!error) {
         response.jsonp({finished_uploading: redis_response == 0})
       } else {
-        response.jsonp(500, error)
+        response.jsonp(500, [{error: error}])
       }
     })
   } else {
@@ -125,7 +144,9 @@ app.post('/upload', function(request, response) {
   log('starting upload');
 
   // parse
-  var form = new formidable.IncomingForm(), files = {};
+  var form   = new formidable.IncomingForm(), files = {},
+      secret = app.get('secret'),
+      valid  = _(secret).isUndefined();
 
   form.maxFieldsSize = 20 * 1024 * 1024; // 20mb
   form.keepExtensions = true;
@@ -134,6 +155,11 @@ app.post('/upload', function(request, response) {
       expireUpload = 10 * 24 * 60 * 60; // 10 days
 
   form.on('file', function(name, file) {
+    if (!valid) {
+      log('Invalid token given, not uploading file to amazon')
+      return
+    }
+
     log("%s uploaded successfully, sending it to to the %s bucket in s3", file.name, app.get('bucket'));
 
     var startTime = new Date(),
@@ -170,6 +196,10 @@ app.post('/upload', function(request, response) {
 
   form.on('field', function(name, value) {
     log('field received: %s=%s', name, value);
+
+    if (secret && name == 'token') {
+      valid = validToken(value)
+    }
   });
 
   form.on('end', function() {
@@ -177,8 +207,12 @@ app.post('/upload', function(request, response) {
   });
 
   form.parse(request, function(err, fields, files) {
-    var filesInfo = _(files).map(function (file) { return new FileInfo(file) });
-    handleResult(request, response, filesInfo, fields.redirect)
+    if (valid) {
+      var filesInfo = _(files).map(function (file) { return new FileInfo(file) });
+      handleResult(request, response, filesInfo, fields.redirect)
+    } else {
+      response.jsonp(403, [{error: 'Forbidden'}])
+    }
   });
 });
 
