@@ -1,8 +1,8 @@
-= Cloud Uploader
+# Cloud Uploader
 
 An upload server that enables you to upload large files to Amazon S3. It should be used with the [jQuery File Upload](http://blueimp.github.com/jQuery-File-Upload/) plugin, and it is ready for deploying in Heroku.
 
-== Installing and Running
+## Installing and Running
 
 After cloning the repository, you will need to install [Node.js](http://nodejs.org/), [NPM](https://npmjs.org/) and [Redis](http://redis.io). Then just run:
 
@@ -18,7 +18,7 @@ Finally start the server by:
 
     node app
 
-== Configuration
+## Configuration
 
 Besides the AWS key and secret you may also configure other aspects of the server, like specifying the hosts allowed to upload files, the server port, whether to use SSL or not for files, etc. Here are the environment variable that can be used:
 
@@ -29,7 +29,7 @@ Besides the AWS key and secret you may also configure other aspects of the serve
 * `USE_SSL`: Whether returned URLs should use HTTPS or HTTP
 * `PORT`: The server port
 
-== Security
+## Security
 
 You should probably think about how to prevent malicious user from uploading files into your S3 account once you've deployed the Cloud Uploader into your server. Since we try to be compatible with jQuery File Upload, we created a simple security measure that will prevent unwanted file uploads, while still being able to support uploads in IE.
 
