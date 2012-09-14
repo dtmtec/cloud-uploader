@@ -28,9 +28,9 @@ app.set('access-control', {
 });
 
 app.set('bucket', process.env.AWS_BUCKET);
-app.set('policy', process.env.AWS_POLICY);
+app.set('policy', process.env.AWS_POLICY || 'public-read');
 app.set('use-ssl', process.env.USE_SSL);
-app.set('upload-path', '/uploads/');
+app.set('upload-path', process.env.UPLOAD_PATH || 'uploads');
 
 app.set('secret', process.env.SECURITY_SECRET);
 app.set('secret_expiration', process.env.SECURITY_SECRET_EXPIRATION || 600); // 5 minutes of expiration
@@ -51,7 +51,7 @@ function FileInfo(file, host) {
 
   host = host || (app.get('bucket') + '.s3.amazonaws.com');
 
-  baseUrl = (app.get('use-ssl') ? 'https:' : 'http:') + '//' + host + app.get('upload-path');
+  baseUrl = (app.get('use-ssl') ? 'https:' : 'http:') + '//' + host + '/' + app.get('upload-path') + '/';
   this.url = this.delete_url = baseUrl + encodeURIComponent(this.name);
 }
 
@@ -165,7 +165,7 @@ app.post('/upload', function(request, response) {
     var startTime = new Date(),
         options = {
           BucketName : app.get('bucket'),
-          ObjectName : app.get('upload-path') + file.name,
+          ObjectName : app.get('upload-path') + '/' + file.name,
           ContentLength : file.length,
           ContentType: file.type,
           Body : fs.createReadStream(file.path),
@@ -177,6 +177,7 @@ app.post('/upload', function(request, response) {
 
     db.setex(file.name, expireUpload, JSON.stringify(fileInfo));
 
+    log('Sending file with options: ', options)
     s3.PutObject(options, function(errors, data) {
       var elapsed = (new Date() - startTime) / 1000;
 
