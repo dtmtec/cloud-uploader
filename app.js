@@ -166,7 +166,7 @@ app.post('/upload', function(request, response) {
         options = {
           BucketName : app.get('bucket'),
           ObjectName : app.get('upload-path') + '/' + file.name,
-          ContentLength : file.length,
+          ContentLength : file.size,
           ContentType: file.type,
           Body : fs.createReadStream(file.path),
           Acl: app.get('policy')
