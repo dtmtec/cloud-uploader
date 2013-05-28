@@ -43,15 +43,16 @@ function log() {
   }
 }
 
-function FileInfo(file, host) {
+function FileInfo(file, options) {
   this.name = file.name;
   this.size = file.size;
   this.type = file.type;
   this.delete_type = 'DELETE';
 
-  host = host || (app.get('bucket') + '.s3.amazonaws.com');
+  host   = options.bucket + '.s3.amazonaws.com';
+  useSSL = options.useSSL && options.useSSL != 'false'
 
-  baseUrl = (app.get('use-ssl') ? 'https:' : 'http:') + '//' + host + '/' + app.get('upload-path') + '/';
+  baseUrl = (useSSL ? 'https:' : 'http:') + '//' + host + '/' + options.uploadPath + '/';
   this.url = this.delete_url = baseUrl + encodeURIComponent(this.name);
 }
 
@@ -141,18 +142,21 @@ app.options('/upload', function (request, response) {
 });
 
 app.post('/upload', function(request, response) {
-  log('starting upload');
+  var form          = new formidable.IncomingForm(),
+      secret        = app.get('secret'),
+      valid         = _(secret).isUndefined(),
+      expireUpload  = 10 * 24 * 60 * 60, // 10 days
+      uploadOptions = {
+        bucket:       app.get('bucket'),
+        uploadPath:   app.get('upload-path'),
+        policy:       app.get('policy'),
+        useSSL:       app.get('use-ssl')
+      };
 
-  // parse
-  var form   = new formidable.IncomingForm(), files = {},
-      secret = app.get('secret'),
-      valid  = _(secret).isUndefined();
+  log('starting upload');
 
   form.maxFieldsSize = 20 * 1024 * 1024; // 20mb
   form.keepExtensions = true;
-
-  var errors = [],
-      expireUpload = 10 * 24 * 60 * 60; // 10 days
 
   form.on('file', function(name, file) {
     if (!valid) {
@@ -160,18 +164,18 @@ app.post('/upload', function(request, response) {
       return
     }
 
-    log("%s uploaded successfully, sending it to to the %s bucket in s3", file.name, app.get('bucket'));
+    log("%s uploaded successfully, sending it to to the %s bucket in s3", file.name, uploadOptions.bucket);
 
     var startTime = new Date(),
         options = {
-          BucketName : app.get('bucket'),
-          ObjectName : app.get('upload-path') + '/' + file.name,
+          BucketName : uploadOptions.bucket,
+          ObjectName : uploadOptions.uploadPath + '/' + file.name,
           ContentLength : file.size,
           ContentType: file.type,
           Body : fs.createReadStream(file.path),
-          Acl: app.get('policy')
+          Acl: uploadOptions.policy
         },
-        fileInfo = new FileInfo(file)
+        fileInfo = new FileInfo(file, uploadOptions)
 
     log('Public file URL: %s', fileInfo.url);
 
@@ -200,6 +204,8 @@ app.post('/upload', function(request, response) {
 
     if (secret && name == 'token') {
       valid = validToken(value)
+    } else {
+      uploadOptions[name] = value // allows upload parameter to be overridden on a per-upload basis
     }
   });
 
@@ -209,7 +215,10 @@ app.post('/upload', function(request, response) {
 
   form.parse(request, function(err, fields, files) {
     if (valid) {
-      var filesInfo = _(files).map(function (file) { return new FileInfo(file) });
+      var filesInfo = _(files).map(function (file) {
+        return new FileInfo(file, uploadOptions)
+      });
+
       handleResult(request, response, filesInfo, fields.redirect)
     } else {
       response.jsonp(403, [{error: 'Forbidden'}])

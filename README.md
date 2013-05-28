@@ -30,6 +30,13 @@ Besides the AWS key and secret you may also configure other aspects of the serve
 * `USE_SSL`: Whether returned URLs should use HTTPS or HTTP
 * `PORT`: The server port
 
+When uploading a file you override the default bucket, policy, uploadPath and whether to use SSL by sending parameters with the uploaded form file. The parameters are the following ones:
+
+* `bucket`: The bucket used to upload the file to S3. Note that you should have permission to PUT files in this bucket.
+* `policy`: The policy to be used for uploaded files (public-read, authenticated-read, etc)
+* `uploadPath`: The path within the bucket where files should be stored
+* `useSSL`: Whether returned URLs should use HTTPS or HTTP
+
 ## Security
 
 You should probably think about how to prevent malicious user from uploading files into your S3 account once you've deployed the Cloud Uploader into your server. Since we try to be compatible with jQuery File Upload, we created a simple security measure that will prevent unwanted file uploads, while still being able to support uploads in IE.
