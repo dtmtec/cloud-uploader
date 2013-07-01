@@ -98,8 +98,8 @@ function handleResult(request, response, result, redirect) {
 
 function validToken(value) {
   var secret           = app.get('secret'),
-      expiration       = app.get('secret_expiration')
-      currentTimestamp = Math.round(new Date().getTime()/1000)
+      expiration       = app.get('secret_expiration'),
+      currentTimestamp = Math.round(new Date().getTime()/1000),
       timestamp        = parseInt(value.substr(0,  10), 10),
       random           = value.substr(10, 10),
       hash             = value.substr(20),
