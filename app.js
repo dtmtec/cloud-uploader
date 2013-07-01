@@ -10,12 +10,19 @@ var express    = require('express'),
     fs         = require('fs'),
     redis      = require('redis-url'),
     crypto     = require('crypto'),
-    _          = require("underscore")._;
+    _          = require("underscore")._,
+    Pusher     = require('pusher');
 
 var s3 = new S3({
   'accessKeyId'     : process.env.AWS_KEY,
   'secretAccessKey' : process.env.AWS_SECRET,
   'region'          : process.env.AWS_REGION || amazon.US_EAST_1
+});
+
+var pusher = new Pusher({
+  appId:  process.env.PUSHER_APP_ID,
+  key:    process.env.PUSHER_KEY,
+  secret: process.env.PUSHER_SECRET
 });
 
 var app = module.exports = express();
@@ -36,6 +43,7 @@ app.set('secret', process.env.SECURITY_SECRET);
 app.set('secret_expiration', process.env.SECURITY_SECRET_EXPIRATION || 600); // 5 minutes of expiration
 
 app.set('port', process.env.PORT || 5000)
+app.set('pusherChannelName', process.env.PUSHER_CHANNEL_NAME || 'cloud-uploader')
 
 function log() {
   if (app.get('debug')) {
@@ -146,6 +154,7 @@ app.post('/upload', function(request, response) {
       secret        = app.get('secret'),
       valid         = _(secret).isUndefined(),
       expireUpload  = 10 * 24 * 60 * 60, // 10 days
+      channelName   = app.get('pusherChannelName')
       uploadOptions = {
         bucket:       app.get('bucket'),
         uploadPath:   app.get('upload-path'),
@@ -192,6 +201,12 @@ app.post('/upload', function(request, response) {
       db.del(file.name);
 
       fs.unlink(file.path);
+
+      if (errors) {
+        pusher.trigger(channelName, 'upload-failed', errors);
+      } else {
+        pusher.trigger(channelName, 'upload-completed', JSON.stringify(file));
+      }
     });
   });
 
@@ -204,6 +219,8 @@ app.post('/upload', function(request, response) {
 
     if (secret && name == 'token') {
       valid = validToken(value)
+    } else if (name == 'channel') {
+      channelName = value
     } else {
       uploadOptions[name] = value // allows upload parameter to be overridden on a per-upload basis
     }

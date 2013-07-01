@@ -14,6 +14,12 @@ You need to set your AWS key, bucket and secret using environment variables:
     export AWS_SECRET=<YOUR_SECRET_HERE>
     export AWS_BUCKET=<YOUR_BUCKET_HERE>
 
+And need your PUSHER app id, key and secret using environment variables:
+
+  export PUSHER_APP_ID=<YOUR_APP_ID_HERE>
+  export PUSHER_KEY=<YOUR_KEY_HERE>
+  export PUSHER_SECRET=<YOUR_SECRET_HERE>
+
 Finally start the server by:
 
     node app
