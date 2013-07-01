@@ -77,7 +77,6 @@ function setDefaultHeaders(response) {
 }
 
 function contentTypeFor(request) {
-  console.log(request.headers.accept)
   return request.headers.accept.indexOf('application/json') !== -1 ? 'application/json' : 'text/plain';
 }
 
