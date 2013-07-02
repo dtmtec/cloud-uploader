@@ -205,7 +205,7 @@ app.post('/upload', function(request, response) {
         log('amazon upload failed, triggering upload-failed on pusher')
         pusher.trigger(channelName, 'upload-failed', errors);
       } else {
-        log('amazon upload failed, triggering upload-completed on pusher')
+        log('amazon upload completed, triggering upload-completed on pusher')
         pusher.trigger(channelName, 'upload-completed', JSON.stringify(file));
       }
     });
