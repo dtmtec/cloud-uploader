@@ -19,15 +19,10 @@ var s3 = new S3({
   'region'          : process.env.AWS_REGION || amazon.US_EAST_1
 });
 
-var pusher = new Pusher({
-  appId:  process.env.PUSHER_APP_ID,
-  key:    process.env.PUSHER_KEY,
-  secret: process.env.PUSHER_SECRET
-});
-
 var app = module.exports = express();
 
 var db = redis.createClient(process.env.REDISTOGO_URL);
+var pusher;
 
 app.set('access-control', {
   allowOrigin: process.env.ALLOW_ORIGIN || '*',
@@ -49,6 +44,16 @@ function log() {
   if (app.get('debug')) {
     console.log.apply(console, arguments);
   }
+}
+
+if (process.env.PUSHER_APP_ID && process.env.PUSHER_KEY && process.env.PUSHER_SECRET) {
+  pusher = new Pusher({
+    appId:  process.env.PUSHER_APP_ID,
+    key:    process.env.PUSHER_KEY,
+    secret: process.env.PUSHER_SECRET
+  });
+} else {
+  console.log('PUSHER_APP_ID, PUSHER_KEY and PUSHER_SECRET are not set, pusher feature will not be available');
 }
 
 function FileInfo(file, options) {
@@ -201,12 +206,14 @@ app.post('/upload', function(request, response) {
 
       fs.unlink(file.path);
 
-      if (errors) {
-        log('amazon upload failed, triggering upload-failed on pusher for ' + file.name)
-        pusher.trigger(channelName, 'upload-failed', errors);
-      } else {
-        log('amazon upload completed, triggering upload-completed on pusher for ' + file.name)
-        pusher.trigger(channelName, 'upload-completed', JSON.stringify(file));
+      if (pusher) {
+        if (errors) {
+          log('amazon upload failed, triggering upload-failed on pusher for ' + file.name)
+          pusher.trigger(channelName, 'upload-failed', errors);
+        } else {
+          log('amazon upload completed, triggering upload-completed on pusher for ' + file.name)
+          pusher.trigger(channelName, 'upload-completed', JSON.stringify(file));
+        }
       }
     });
   });
