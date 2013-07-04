@@ -10,6 +10,7 @@ var express    = require('express'),
     fs         = require('fs'),
     redis      = require('redis-url'),
     crypto     = require('crypto'),
+    XRegExp    = require('XRegExp').XRegExp,
     _          = require("underscore")._,
     Pusher     = require('pusher');
 
@@ -23,6 +24,7 @@ var app = module.exports = express();
 
 var db = redis.createClient(process.env.REDISTOGO_URL);
 var pusher;
+var AsciiOnlyRegexp = XRegExp("[^\\s\\_\\-\\.\\p{Ascii}]+", "g")
 
 app.set('access-control', {
   allowOrigin: process.env.ALLOW_ORIGIN || '*',
@@ -57,7 +59,7 @@ if (process.env.PUSHER_APP_ID && process.env.PUSHER_KEY && process.env.PUSHER_SE
 }
 
 function FileInfo(file, options) {
-  this.name = file.name;
+  this.name = XRegExp.replace(file.name, AsciiOnlyRegexp, '');
   this.size = file.size;
   this.type = file.type;
   this.delete_type = 'DELETE';
@@ -181,7 +183,7 @@ app.post('/upload', function(request, response) {
     }
 
     var startTime = new Date(),
-        filename  = file.name,
+        filename  = XRegExp.replace(file.name, AsciiOnlyRegexp, ''),
         options = {
           BucketName : uploadOptions.bucket,
           ObjectName : uploadOptions.uploadPath + '/' + filename,

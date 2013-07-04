@@ -11,7 +11,8 @@
     "redis": "0.8.x",
     "hiredis": "0.1.x",
     "redis-url": "0.1.x",
-    "pusher": "0.x"
+    "pusher": "",
+    "xregexp": ""
   },
   "engines": {
     "node": "0.8.x",
