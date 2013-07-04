@@ -10,7 +10,7 @@ var express    = require('express'),
     fs         = require('fs'),
     redis      = require('redis-url'),
     crypto     = require('crypto'),
-    XRegExp    = require('XRegExp').XRegExp,
+    XRegExp    = require('xregexp').XRegExp,
     _          = require("underscore")._,
     Pusher     = require('pusher');
 
