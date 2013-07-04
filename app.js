@@ -136,9 +136,12 @@ app.get('/status', function(request, response) {
   setDefaultHeaders(response);
 
   if (request.query.file) {
-    db.exists(request.query.file, function (error, redis_response) {
+    db.get(request.query.file, function (error, redis_response) {
+      error = redis_response == 'error' ? 'upload-failed' : error
+
       if (!error) {
-        response.jsonp({finished_uploading: redis_response == 0})
+        // key is deleted when upload is finished, so it should have an empty response
+        response.jsonp({finished_uploading: _(redis_response).isEmpty()})
       } else {
         response.jsonp(500, [{error: error}])
       }
@@ -177,12 +180,11 @@ app.post('/upload', function(request, response) {
       return
     }
 
-    log("%s uploaded successfully, sending it to to the %s bucket in s3", file.name, uploadOptions.bucket);
-
     var startTime = new Date(),
+        filename  = file.name,
         options = {
           BucketName : uploadOptions.bucket,
-          ObjectName : uploadOptions.uploadPath + '/' + file.name,
+          ObjectName : uploadOptions.uploadPath + '/' + filename,
           ContentLength : file.size,
           ContentType: file.type,
           Body : fs.createReadStream(file.path),
@@ -190,9 +192,11 @@ app.post('/upload', function(request, response) {
         },
         fileInfo = new FileInfo(file, uploadOptions)
 
+    log("%s uploaded successfully, sending it to to the %s bucket in s3", filename, uploadOptions.bucket);
+
     log('Public file URL: %s', fileInfo.url);
 
-    db.setex(file.name, expireUpload, JSON.stringify(fileInfo));
+    db.setex(filename, expireUpload, JSON.stringify(fileInfo));
 
     log('Sending file with options: ', options)
     s3.PutObject(options, function(errors, data) {
@@ -202,16 +206,20 @@ app.post('/upload', function(request, response) {
       log('Errors: ', errors);
       log('Data: ', data);
 
-      db.del(file.name);
+      if (errors) {
+        db.setex(filename, expireUpload, 'error');
+      } else {
+        db.del(filename);
+      }
 
       fs.unlink(file.path);
 
       if (pusher) {
         if (errors) {
-          log('amazon upload failed, triggering upload-failed on pusher for ' + file.name)
+          log('amazon upload failed, triggering upload-failed on pusher for ' + filename);
           pusher.trigger(channelName, 'upload-failed', errors);
         } else {
-          log('amazon upload completed, triggering upload-completed on pusher for ' + file.name)
+          log('amazon upload completed, triggering upload-completed on pusher for ' + filename)
           pusher.trigger(channelName, 'upload-completed', JSON.stringify(file));
         }
       }
