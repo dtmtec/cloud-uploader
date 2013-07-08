@@ -12,7 +12,8 @@
     "hiredis": "0.1.x",
     "redis-url": "0.1.x",
     "pusher": "",
-    "xregexp": ""
+    "xregexp": "",
+    "aws-sdk": ""
   },
   "engines": {
     "node": "0.8.x",

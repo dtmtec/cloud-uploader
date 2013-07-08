@@ -12,7 +12,8 @@ var express    = require('express'),
     crypto     = require('crypto'),
     XRegExp    = require('xregexp').XRegExp,
     _          = require("underscore")._,
-    Pusher     = require('pusher');
+    Pusher     = require('pusher'),
+    AWS        = require('aws-sdk');
 
 var s3 = new S3({
   'accessKeyId'     : process.env.AWS_KEY,
@@ -69,6 +70,18 @@ function FileInfo(file, options) {
 
   baseUrl = (useSSL ? 'https:' : 'http:') + '//' + host + '/' + options.uploadPath + '/';
   this.url = this.delete_url = baseUrl + encodeURIComponent(this.name);
+
+  if (!_(['public-read', 'public-read-write']).include(options.policy)) {
+    var key = options.uploadPath + '/' + encodeURIComponent(this.name);
+    this.url = signedUrl(key)
+  }
+}
+
+function signedUrl(key) {
+  var credentials = new AWS.Credentials(process.env.AWS_KEY, process.env.AWS_SECRET),
+      awsS3 = new AWS.S3(credentials)
+
+  return awsS3.getSignedUrl('getObject', {Bucket: process.env.AWS_BUCKET, Key: key})
 }
 
 function setDefaultHeaders(response) {
