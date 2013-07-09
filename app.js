@@ -36,6 +36,7 @@ app.set('bucket', process.env.AWS_BUCKET);
 app.set('policy', process.env.AWS_POLICY || 'public-read');
 app.set('use-ssl', process.env.USE_SSL);
 app.set('upload-path', process.env.UPLOAD_PATH || 'uploads');
+app.set('signed-url-expiration', process.env.SIGNED_URL_EXPIRATION || 900)
 
 app.set('secret', process.env.SECURITY_SECRET);
 app.set('secret_expiration', process.env.SECURITY_SECRET_EXPIRATION || 600); // 5 minutes of expiration
@@ -73,15 +74,15 @@ function FileInfo(file, options) {
 
   if (!_(['public-read', 'public-read-write']).include(options.policy)) {
     var key = options.uploadPath + '/' + encodeURIComponent(this.name);
-    this.url = signedUrl(key)
+    this.url = signedUrl(key, options)
   }
 }
 
-function signedUrl(key) {
+function signedUrl(key, options) {
   var credentials = new AWS.Credentials(process.env.AWS_KEY, process.env.AWS_SECRET),
       awsS3 = new AWS.S3(credentials)
 
-  return awsS3.getSignedUrl('getObject', {Bucket: process.env.AWS_BUCKET, Key: key})
+  return awsS3.getSignedUrl('getObject', {Bucket: options.bucket, Key: key, Expires: options.signedUrlExpiration})
 }
 
 function setDefaultHeaders(response) {
@@ -178,10 +179,11 @@ app.post('/upload', function(request, response) {
       expireUpload  = 10 * 24 * 60 * 60, // 10 days
       channelName   = app.get('pusherChannelName')
       uploadOptions = {
-        bucket:       app.get('bucket'),
-        uploadPath:   app.get('upload-path'),
-        policy:       app.get('policy'),
-        useSSL:       app.get('use-ssl')
+        bucket:              app.get('bucket'),
+        uploadPath:          app.get('upload-path'),
+        policy:              app.get('policy'),
+        useSSL:              app.get('use-ssl'),
+        signedUrlExpiration: app.get('signed-url-expiration')
       };
 
   log('starting upload');
