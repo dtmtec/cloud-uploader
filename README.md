@@ -1,5 +1,7 @@
 # Cloud Uploader
 
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/dtmtec/cloud-uploader/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
 An upload server that enables you to upload large files to Amazon S3. It should be used with the [jQuery File Upload](http://blueimp.github.com/jQuery-File-Upload/) plugin, and it is ready for deploying in Heroku.
 
 ## Installing and Running
