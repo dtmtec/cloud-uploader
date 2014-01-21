@@ -2,6 +2,12 @@
   "name": "cloud-uploader",
   "description": "An upload server written in Node.js that uploads files to S3",
   "author": "Vicente Mundim",
+  "keywords": "upload cloud file s3",
+  "homepage": "http://github.com/dtmtec/cloud-uploader",
+  "repository": {
+    "type" : "git",
+    "url" : "http://github.com/dtmtec/cloud-uploader.git"
+  },
   "version": "0.1.0",
   "dependencies": {
     "express": "3.x",
