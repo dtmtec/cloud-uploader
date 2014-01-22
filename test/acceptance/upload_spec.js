@@ -6,11 +6,19 @@ var app     = require('../../app'),
     redis   = require('redis-url'),
     request = require('supertest'),
     expect  = require('expect.js'),
+    sinon   = require('sinon'),
+    awssum  = require('awssum'),
+    amazon  = awssum.load('amazon/amazon'),
+    S3      = awssum.load('amazon/s3').S3
     db      = redis.createClient();
 
 describe('CloudUploader', function () {
+  var s3;
+
   beforeEach(function () {
-    db.flushdb()
+    db.flushdb();
+    s3 = sinon.createStubInstance(S3);
+    app.set('s3', s3);
   });
 
   describe('GET /status', function () {
@@ -92,6 +100,19 @@ describe('CloudUploader', function () {
 
     beforeEach(function () {
       jsonResult = '[{"name":"test-file.txt","size":37,"type":"text/plain","delete_type":"DELETE","delete_url":"http://undefined.s3.amazonaws.com/uploads/test-file.txt","url":"http://undefined.s3.amazonaws.com/uploads/test-file.txt"}]'
+    });
+
+    it('uploads file to S3 service', function (done) {
+      // var stub = sinon.stub(s3, 'PutObject')
+
+      request(app)
+          .post('/upload')
+          .set('Accept', 'application/json')
+          .attach('file', 'test/fixtures/test-file.txt')
+          .end(function () {
+            sinon.assert.called(s3.PutObject)
+            done()
+          })
     });
 
     describe('when sending "application/json" on accept header', function () {

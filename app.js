@@ -15,12 +15,6 @@ var express    = require('express'),
     Pusher     = require('pusher'),
     AWS        = require('aws-sdk');
 
-var s3 = new S3({
-  'accessKeyId'     : process.env.AWS_KEY,
-  'secretAccessKey' : process.env.AWS_SECRET,
-  'region'          : process.env.AWS_REGION || amazon.US_EAST_1
-});
-
 var app = module.exports = express();
 
 var db = redis.createClient(process.env.REDISTOGO_URL);
@@ -31,6 +25,12 @@ app.set('access-control', {
   allowOrigin: process.env.ALLOW_ORIGIN || '*',
   allowMethods: 'OPTIONS, GET, POST'
 });
+
+app.set('s3', new S3({
+  'accessKeyId'     : process.env.AWS_KEY,
+  'secretAccessKey' : process.env.AWS_SECRET,
+  'region'          : process.env.AWS_REGION || amazon.US_EAST_1
+}))
 
 app.set('bucket', process.env.AWS_BUCKET);
 app.set('policy', process.env.AWS_POLICY || 'public-read');
@@ -177,7 +177,8 @@ app.post('/upload', function(request, response) {
       secret        = app.get('secret'),
       valid         = _(secret).isUndefined(),
       expireUpload  = 10 * 24 * 60 * 60, // 10 days
-      channelName   = app.get('pusherChannelName')
+      channelName   = app.get('pusherChannelName'),
+      s3            = app.get('s3'),
       uploadOptions = {
         bucket:              app.get('bucket'),
         uploadPath:          app.get('upload-path'),
@@ -185,6 +186,8 @@ app.post('/upload', function(request, response) {
         useSSL:              app.get('use-ssl'),
         signedUrlExpiration: app.get('signed-url-expiration')
       };
+
+  debugger
 
   log('starting upload');
 
