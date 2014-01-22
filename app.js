@@ -98,7 +98,7 @@ function setDefaultHeaders(response) {
 }
 
 function contentTypeFor(request) {
-  return request.headers.accept.indexOf('application/json') !== -1 ? 'application/json' : 'text/plain';
+  return request.headers.accept && request.headers.accept.indexOf('application/json') !== -1 ? 'application/json' : 'text/plain';
 }
 
 function handleResult(request, response, result, redirect) {
@@ -276,5 +276,4 @@ app.post('/upload', function(request, response) {
   });
 });
 
-app.listen(app.get('port'));
-console.log("Express server listening on port %d in %s mode", app.get('port'), app.settings.env);
+module.exports = app;

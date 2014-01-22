@@ -24,7 +24,15 @@ And need your PUSHER app id, key and secret using environment variables:
 
 Finally start the server by:
 
-    node app
+    node server.js
+
+You can optionally, use foreman to run it, this is needed on Heroku for example. Install it by:
+
+    gem install foreman
+
+Then just run it:
+
+    foreman start
 
 ## Configuration
 
